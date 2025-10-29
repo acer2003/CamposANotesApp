@@ -47,4 +47,35 @@ class NoteViewModel(application: Application): AndroidViewModel(application){
     fun delete (note: Note) = viewModelScope.launch{
         noteDao.deleteNote(note)
     }
+
+    val allNotesWithTags: Flow<List<NoteWithTags>> = noteDao.getNotesWithTags()
+
+    suspend fun getNoteById(id: Int): Note?{
+        return noteDao.getNoteById(id)
+    }
+
+    suspend fun getNoteWithTags(noteId: Int): NoteWithTags?{
+        return noteDao.getNoteWithTags(noteId)
+    }
+
+    fun insertTag(tag: Tag) = viewModelScope.launch{
+        noteDao.insertTag(tag)
+    }
+
+    fun updateTag(tag: Tag) = viewModelScope.launch{
+        noteDao.updateTag(tag)
+    }
+
+    fun deleteTag(tag: Tag) = viewModelScope.launch{
+        noteDao.deleteTag(tag)
+    }
+
+    //add a tag
+    fun addTagToNote(noteId: Int, tagId: Int) = viewModelScope.launch{
+        noteDao.deleteNoteTagCrossRef(NoteTagCrossRef(noteId, tagId))
+    }
+
+    fun removeTagFromNote(noteId: Int, tagId: Int) = viewModelScope.launch {
+        noteDao.deleteNoteTagCrossRef(NoteTagCrossRef(noteId, tagId))
+    }
 }

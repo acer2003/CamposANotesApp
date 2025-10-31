@@ -48,9 +48,14 @@ abstract class AppDatabase : RoomDatabase() {
                     CREATE TABLE IF NOT EXISTS note_tag_cross_ref (
                         note_id INTEGER NOT NULL,
                         tag_id INTEGER NOT NULL,
-                        PRIMARY KEY(note_id, tag_id)
+                        PRIMARY KEY(note_id, tag_id),
+                        FOREIGN KEY(note_id) REFERENCES notes(id) ON DELETE CASCADE,
+                        FOREIGN KEY(tag_id) REFERENCES tags(id) ON DELETE CASCADE
                     )
                 """)
+
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_note_tag_cross_ref_note_id ON note_tag_cross_ref(note_id)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_note_tag_cross_ref_tag_id ON note_tag_cross_ref(tag_id)")
             }
         }
 

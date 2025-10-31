@@ -38,10 +38,15 @@ android {
     buildFeatures {
         compose = true
     }
+    composeOptions {
+        kotlinCompilerExtensionVersion = "2.0.21"
+    }
 }
 
 dependencies {
-    implementation("androidx.compose.material:material-icons-extended-android:1.6.6") // Or the latest version
+    implementation("androidx.navigation:navigation-compose:2.7.7")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.2") // Updated version
+    implementation("androidx.compose.material:material-icons-extended-android:1.6.6") 
     implementation(libs.material3)
     ksp("androidx.room:room-compiler:2.6.1")
     implementation("androidx.room:room-runtime:2.6.1")

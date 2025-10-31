@@ -30,6 +30,9 @@ interface NoteDao {
     @Query("DELETE FROM notes")
     suspend fun deleteAllNotes()
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertNoteTagCrossRef(crossRef: NoteTagCrossRef)
+
     @Query("SELECT * FROM notes WHERE title LIKE '%' || :searchQuery || '%' " +
             "OR content LIKE '%' || :searchQuery || '%' ORDER BY id DESC")
     fun searchNotes(searchQuery: String): Flow<List<Note>>
@@ -49,7 +52,15 @@ interface NoteDao {
     // get note with its tags
     @Transaction  //ensures that all data loads together
     @Query("SELECT * FROM notes WHERE id = :id")
-    fun getNoteWithTags(id: Int): NoteWithTags?
+    suspend fun getNoteWithTags(id: Int): NoteWithTags?
+
+    @Transaction
+    @Query("SELECT * FROM notes WHERE id = :id")
+    fun getNoteWithTagsById(id: Int): Flow<NoteWithTags?>
+
+    @Transaction
+    @Query("SELECT * FROM notes WHERE title LIKE '%' || :query || '%' OR content LIKE '%' || :query || '%' ORDER BY updated_at DESC")
+    fun searchNotesWithTags(query: String): Flow<List<NoteWithTags>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertTag(tag: Tag): Long

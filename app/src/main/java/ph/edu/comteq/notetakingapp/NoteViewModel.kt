@@ -7,33 +7,64 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 
 class NoteViewModel(application: Application): AndroidViewModel(application){
     private val noteDao: NoteDao = AppDatabase.getDatabase(application).noteDao()
 
-    private val _searchQuery = MutableStateFlow("")
-    val searchQuery: StateFlow<String> = _searchQuery
+    // Main list of all notes with their tags
+    private val _notesWithTags = MutableStateFlow<List<NoteWithTags>>(emptyList())
+    val notesWithTags: StateFlow<List<NoteWithTags>> = _notesWithTags.asStateFlow()
 
-    //val allNotes: Flow<List<Note>> = noteDao.getAllNotes()
-    @OptIn(ExperimentalCoroutinesApi::class)
-    val allNotes: Flow<List<Note>> = searchQuery.flatMapLatest { query ->
-        if(query.isEmpty()){ // or isBlank()
-            noteDao.getAllNotes() //show all notes
-        }else{
-            noteDao.searchNotes(query)
+    // State for the search query (internal)
+    private val _searchQuery = MutableStateFlow("")
+    // Exposed search results
+    private val _searchResults = MutableStateFlow<List<NoteWithTags>>(emptyList())
+    val searchResults: StateFlow<List<NoteWithTags>> = _searchResults.asStateFlow()
+
+
+    init {
+        // Collect all notes from the repository and update _notesWithTags
+        viewModelScope.launch {
+            noteDao.getNotesWithTags().collect {
+                _notesWithTags.value = it
+            }
+        }
+
+        // Setup a listener for search queries
+        viewModelScope.launch {
+            _searchQuery
+                .debounce(300L) // Wait for user to stop typing
+                .distinctUntilChanged() // Only react if query actually changes
+                .flatMapLatest { query ->
+                    if (query.isBlank()) {
+                        flowOf(emptyList()) // No search if query is empty
+                    } else {
+                        noteDao.searchNotesWithTags(query) // Call DAO search method
+                    }
+                }
+                .collect {
+                    _searchResults.value = it // Update search results
+                }
         }
     }
 
-    // call this when user types in the search bar
-    fun updateSearchQuery(query: String){
+    // Function to update the search query, called from the UI
+    fun searchNotes(query: String) {
         _searchQuery.value = query
     }
 
-    // call this to clear the search query
-    fun clearSearch(){
-        _searchQuery.value = " "
+    // Remaining existing functions (modified only if necessary to fit the new flow structure)
+    // The previous 'allNotesWithTags' is no longer needed as notesWithTags and searchResults handle it.
+
+    fun addNote(title: String, content: String) = viewModelScope.launch {
+        val newNote = Note(title = title, content = content)
+        insert(newNote)
     }
 
     fun insert(note : Note) = viewModelScope.launch {
@@ -48,10 +79,16 @@ class NoteViewModel(application: Application): AndroidViewModel(application){
         noteDao.deleteNote(note)
     }
 
-    val allNotesWithTags: Flow<List<NoteWithTags>> = noteDao.getNotesWithTags()
+    fun getNoteById(id: Int): Flow<NoteWithTags?> {
+        return noteDao.getNoteWithTagsById(id)
+    }
 
-    suspend fun getNoteById(id: Int): Note?{
-        return noteDao.getNoteById(id)
+    fun updateNote(noteId: Int, newTitle: String, newContent: String) = viewModelScope.launch {
+        val noteWithTags = noteDao.getNoteWithTags(noteId)
+        if (noteWithTags != null) {
+            val updatedNote = noteWithTags.note.copy(title = newTitle, content = newContent)
+            noteDao.updateNote(updatedNote)
+        }
     }
 
     suspend fun getNoteWithTags(noteId: Int): NoteWithTags?{
@@ -72,7 +109,7 @@ class NoteViewModel(application: Application): AndroidViewModel(application){
 
     //add a tag
     fun addTagToNote(noteId: Int, tagId: Int) = viewModelScope.launch{
-        noteDao.deleteNoteTagCrossRef(NoteTagCrossRef(noteId, tagId))
+        noteDao.insertNoteTagCrossRef(NoteTagCrossRef(noteId, tagId))
     }
 
     fun removeTagFromNote(noteId: Int, tagId: Int) = viewModelScope.launch {

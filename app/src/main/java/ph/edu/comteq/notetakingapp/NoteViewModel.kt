@@ -78,7 +78,12 @@ class NoteViewModel(application: Application): AndroidViewModel(application){
     fun delete (note: Note) = viewModelScope.launch{
         noteDao.deleteNote(note)
     }
-    
+
+    // New function to handle deletion via ID, called from UI
+    fun deleteNote(noteId: Int) = viewModelScope.launch {
+        noteDao.deleteNoteById(noteId)
+    }
+
     fun deleteNoteById(noteId: Int) = viewModelScope.launch {
         noteDao.deleteNoteById(noteId)
     }

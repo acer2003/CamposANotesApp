@@ -33,6 +33,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SearchBar
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -109,7 +110,7 @@ fun NotesListScreen(
                 NotesLazyColumn(
                     notesWithTags = searchResults,
                     onEditNote = onEditNote,
-                    onDeleteNote = { viewModel.deleteNoteById(it) },
+                    onDeleteNote = { noteId -> viewModel.deleteNote(noteId) },
                     emptyMessage = "No search results found."
                 )
             }
@@ -129,7 +130,7 @@ fun NotesListScreen(
                 NotesLazyColumn(
                     notesWithTags = notesWithTags,
                     onEditNote = onEditNote,
-                    onDeleteNote = { viewModel.deleteNoteById(it) },
+                    onDeleteNote = { noteId -> viewModel.deleteNote(noteId) },
                     emptyMessage = "No notes yet. Click the '+' to add one!"
                 )
             }
@@ -142,7 +143,7 @@ fun NotesListScreen(
 fun NotesLazyColumn(
     notesWithTags: List<NoteWithTags>,
     onEditNote: (Int) -> Unit,
-    onDeleteNote: (Int) -> Unit,
+    onDeleteNote: (Int) -> Unit, // Added onDeleteNote parameter
     emptyMessage: String
 ) {
     if (notesWithTags.isEmpty()) {
@@ -163,7 +164,7 @@ fun NotesLazyColumn(
                 NoteCard(
                     noteWithTags = noteWithTags,
                     onEditNote = onEditNote,
-                    onDeleteNote = onDeleteNote
+                    onDeleteNote = onDeleteNote // Pass onDeleteNote
                 )
             }
         }
@@ -175,9 +176,9 @@ fun NotesLazyColumn(
 fun NoteCard(
     noteWithTags: NoteWithTags,
     onEditNote: (Int) -> Unit,
-    onDeleteNote: (Int) -> Unit
+    onDeleteNote: (Int) -> Unit // Added onDeleteNote parameter
 ) {
-    var showMenu by remember { mutableStateOf(false) }
+    var expanded by remember { mutableStateOf(false) }
 
     Card(
         modifier = Modifier
@@ -191,6 +192,7 @@ fun NoteCard(
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
@@ -201,18 +203,25 @@ fun NoteCard(
                     modifier = Modifier.weight(1f)
                 )
                 Box {
-                    IconButton(onClick = { showMenu = true }) {
+                    IconButton(onClick = { expanded = true }) {
                         Icon(Icons.Default.MoreVert, contentDescription = "More options")
                     }
                     DropdownMenu(
-                        expanded = showMenu,
-                        onDismissRequest = { showMenu = false }
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false }
                     ) {
+                        DropdownMenuItem(
+                            text = { Text("Edit") },
+                            onClick = {
+                                expanded = false
+                                onEditNote(noteWithTags.note.id)
+                            }
+                        )
                         DropdownMenuItem(
                             text = { Text("Delete") },
                             onClick = {
+                                expanded = false
                                 onDeleteNote(noteWithTags.note.id)
-                                showMenu = false
                             }
                         )
                     }

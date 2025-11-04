@@ -30,6 +30,9 @@ interface NoteDao {
     @Query("DELETE FROM notes")
     suspend fun deleteAllNotes()
 
+    @Query("DELETE FROM notes WHERE id = :noteId")
+    suspend fun deleteNoteById(noteId: Int)
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertNoteTagCrossRef(crossRef: NoteTagCrossRef)
 

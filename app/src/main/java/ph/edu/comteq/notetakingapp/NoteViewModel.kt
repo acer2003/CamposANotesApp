@@ -78,6 +78,10 @@ class NoteViewModel(application: Application): AndroidViewModel(application){
     fun delete (note: Note) = viewModelScope.launch{
         noteDao.deleteNote(note)
     }
+    
+    fun deleteNoteById(noteId: Int) = viewModelScope.launch {
+        noteDao.deleteNoteById(noteId)
+    }
 
     fun getNoteById(id: Int): Flow<NoteWithTags?> {
         return noteDao.getNoteWithTagsById(id)
